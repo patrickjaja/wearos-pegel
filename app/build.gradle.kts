@@ -54,6 +54,7 @@ dependencies {
     // Wear OS
     implementation("androidx.wear:wear:1.3.0")
     implementation("com.google.android.support:wearable:2.9.0")
+    compileOnly("com.google.android.wearable:wearable:2.9.0")  // Required for release builds
 
     // Compose
     val composeVersion = "1.6.0"
