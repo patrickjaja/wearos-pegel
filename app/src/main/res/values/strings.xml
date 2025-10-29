@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Pegel</string>
+    <string name="tile_name">Pegel Drinking Tracker</string>
+
+    <!-- Main Screen -->
+    <string name="add_water">Add Water</string>
+    <string name="current_intake">Current Intake</string>
+    <string name="ml">ml</string>
+    <string name="daily_goal">Daily Goal</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="daily_goal_setting">Daily Goal</string>
+    <string name="daily_goal_default">2000</string>
+
+    <!-- Tile strings -->
+    <string name="tile_today_count">Today: %d</string>
+    <string name="tile_drink_logged">Drink logged</string>
+
+    <!-- TODO: Add more strings as features are implemented -->
+</resources>

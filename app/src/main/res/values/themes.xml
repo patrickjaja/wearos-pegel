@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base theme for Wear OS -->
+    <style name="Theme.Pegel" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/blue_primary</item>
+        <item name="android:colorPrimaryDark">@color/blue_primary_dark</item>
+        <item name="android:colorAccent">@color/blue_accent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+</resources>

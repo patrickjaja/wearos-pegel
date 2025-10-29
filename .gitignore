@@ -1,0 +1,35 @@
+# Gradle
+.gradle/
+build/
+*.apk
+*.ap_
+*.aab
+
+# Android Studio
+.idea/
+.DS_Store
+*.iml
+*.iws
+*.ipr
+*.swp
+.classpath
+.project
+.settings/
+local.properties
+
+# Kotlin
+.kotlin/
+
+# Build outputs
+bin/
+out/
+gen/
+
+# IDE
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# OS
+Thumbs.db
+.DS_Store
