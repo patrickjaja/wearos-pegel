@@ -1,21 +1,59 @@
 package com.pegel.wearos.data
 
+import androidx.annotation.DrawableRes
+import com.pegel.wearos.R
 import kotlinx.serialization.Serializable
 
 /**
  * Enum representing the different types of alcoholic drinks that can be logged.
- * Each drink type has an emoji and display name for UI purposes.
+ * Each drink type has a drawable icon, emoji fallback, and display name for UI purposes.
  */
 @Serializable
 enum class DrinkType(
-    val emoji: String,
+    @DrawableRes val iconRes: Int,
+    val defaultEmoji: String,
     val displayName: String
 ) {
-    BEER(emoji = "🍺", displayName = "Beer"),
-    WINE(emoji = "🍷", displayName = "Wine"),
-    SHOT(emoji = "🥃", displayName = "Shot"),
-    COCKTAIL(emoji = "🍸", displayName = "Cocktail"),
-    LONG_DRINK(emoji = "🍹", displayName = "Long Drink");
+    BEER(
+        iconRes = R.drawable.drink_beer_glas,
+        defaultEmoji = "🍺",
+        displayName = "Beer"
+    ),
+    WINE(
+        iconRes = R.drawable.drink_wine_glas,
+        defaultEmoji = "🍷",
+        displayName = "Wine"
+    ),
+    SHOT(
+        iconRes = R.drawable.drink_shot_glass,
+        defaultEmoji = "🥃",
+        displayName = "Shot"
+    ),
+    COCKTAIL(
+        iconRes = R.drawable.drink_cocktail_glas,
+        defaultEmoji = "🍸",
+        displayName = "Cocktail"
+    ),
+    LONG_DRINK(
+        iconRes = R.drawable.drink_long_drink_glass,
+        defaultEmoji = "🍹",
+        displayName = "Long Drink"
+    ),
+    BEER_TOWER(
+        iconRes = R.drawable.drink_beer_tower,
+        defaultEmoji = "🍺🗼",
+        displayName = "Beer Tower"
+    ),
+    VODKA_PITCHER(
+        iconRes = R.drawable.drink_vodka_pitcher_with_straws,
+        defaultEmoji = "🍹🥤",
+        displayName = "Vodka Pitcher"
+    ),
+    VODKA_TOWER(
+        iconRes = R.drawable.drink_vodka_tower,
+        defaultEmoji = "🍸🗼",
+        displayName = "Vodka Tower"
+    );
 
     companion object {
         /**

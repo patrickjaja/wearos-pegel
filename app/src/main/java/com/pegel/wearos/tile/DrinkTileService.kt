@@ -9,6 +9,7 @@ import androidx.wear.protolayout.DimensionBuilders
 import androidx.wear.protolayout.DimensionBuilders.dp
 import androidx.wear.protolayout.DimensionBuilders.sp
 import androidx.wear.protolayout.LayoutElementBuilders
+import androidx.wear.protolayout.LayoutElementBuilders.FontStyle
 import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.ResourceBuilders
 import androidx.wear.protolayout.TimelineBuilders
@@ -17,6 +18,7 @@ import androidx.wear.tiles.TileBuilders
 import androidx.wear.tiles.TileService
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.pegel.wearos.data.ActiveDrinksRepository
 import com.pegel.wearos.data.DrinkRepository
 import com.pegel.wearos.data.DrinkType
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +32,8 @@ import kotlinx.coroutines.runBlocking
 /**
  * Wear OS Tile Service for the Pegel drinking tracker app.
  *
- * This service displays a tile with 5 clickable emoji buttons representing different drink types.
+ * This service displays a tile with clickable icon buttons representing active drink types.
+ * The layout is dynamic based on the user's active drink preferences (1-5 drinks).
  * When a user taps a button:
  * 1. The drink is logged to the DrinkRepository
  * 2. Haptic feedback is triggered
@@ -42,16 +45,10 @@ import kotlinx.coroutines.runBlocking
 class DrinkTileService : TileService() {
 
     private lateinit var repository: DrinkRepository
+    private lateinit var activeDrinksRepository: ActiveDrinksRepository
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     companion object {
-        // Action IDs for each drink type button
-        private const val ACTION_CLICK_BEER = "action_beer"
-        private const val ACTION_CLICK_WINE = "action_wine"
-        private const val ACTION_CLICK_SHOT = "action_shot"
-        private const val ACTION_CLICK_COCKTAIL = "action_cocktail"
-        private const val ACTION_CLICK_LONG_DRINK = "action_long_drink"
-
         // Vibration duration for haptic feedback
         private const val VIBRATION_DURATION_MS = 50L
 
@@ -90,6 +87,7 @@ class DrinkTileService : TileService() {
     override fun onCreate() {
         super.onCreate()
         repository = DrinkRepository(applicationContext)
+        activeDrinksRepository = ActiveDrinksRepository(applicationContext)
     }
 
     override fun onDestroy() {
@@ -101,19 +99,22 @@ class DrinkTileService : TileService() {
      * Called when the system requests the tile layout.
      * This method builds and returns the complete tile UI.
      *
-     * Note: We use runBlocking here to fetch the count synchronously.
+     * Note: We use runBlocking here to fetch data synchronously.
      * This is acceptable for tiles because:
      * 1. DataStore reads are very fast (< 10ms typically)
      * 2. Tile requests are expected to complete quickly
      * 3. The alternative would be showing stale data
      */
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> {
-        // Fetch current drink count synchronously
-        val totalCount = runBlocking(Dispatchers.IO) {
+        // Fetch current drink count and active drinks synchronously
+        val (totalCount, activeDrinks) = runBlocking(Dispatchers.IO) {
             try {
-                repository.getTotalDrinksToday().first()
+                val count = repository.getTotalDrinksToday().first()
+                val drinks = activeDrinksRepository.getActiveDrinks().first()
+                Pair(count, drinks)
             } catch (e: Exception) {
-                0 // Default to 0 on error
+                // Default to 0 count and first 5 drinks on error
+                Pair(0, DrinkType.entries.take(5))
             }
         }
 
@@ -122,7 +123,7 @@ class DrinkTileService : TileService() {
                 TimelineBuilders.TimelineEntry.Builder()
                     .setLayout(
                         LayoutElementBuilders.Layout.Builder()
-                            .setRoot(createTileLayout(totalCount))
+                            .setRoot(createTileLayout(totalCount, activeDrinks))
                             .build()
                     )
                     .build()
@@ -140,7 +141,7 @@ class DrinkTileService : TileService() {
 
     /**
      * Called when the system requests tile resources.
-     * Currently returns an empty resources bundle as we're using emoji text.
+     * Returns empty resources since we're using emoji text instead of images.
      */
     override fun onTileResourcesRequest(
         requestParams: RequestBuilders.ResourcesRequest
@@ -154,11 +155,21 @@ class DrinkTileService : TileService() {
 
     /**
      * Creates the main tile layout with drink buttons and count display.
+     * Dynamically adjusts layout based on number of active drinks:
+     * - 1 drink: Single centered button
+     * - 2 drinks: 1 row with 2 buttons
+     * - 3 drinks: 2 rows (2 buttons + 1 button)
+     * - 4 drinks: 2 rows (2 buttons + 2 buttons)
+     * - 5 drinks: 2 rows (3 buttons + 2 buttons)
      *
      * @param totalCount The total number of drinks logged today
+     * @param activeDrinks The list of active drinks to display
      */
-    private fun createTileLayout(totalCount: Int): LayoutElementBuilders.LayoutElement {
-        return LayoutElementBuilders.Column.Builder()
+    private fun createTileLayout(
+        totalCount: Int,
+        activeDrinks: List<DrinkType>
+    ): LayoutElementBuilders.LayoutElement {
+        val column = LayoutElementBuilders.Column.Builder()
             .setWidth(dp(192f))
             .setHeight(dp(192f))
             .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
@@ -174,23 +185,62 @@ class DrinkTileService : TileService() {
             // Total count display at top
             .addContent(createCountDisplay(totalCount))
             .addContent(createSpacing(SPACING))
-            // Row 1: Beer, Wine, Shot
-            .addContent(createButtonRow(
-                listOf(
-                    DrinkType.BEER to ACTION_CLICK_BEER,
-                    DrinkType.WINE to ACTION_CLICK_WINE,
-                    DrinkType.SHOT to ACTION_CLICK_SHOT
-                )
-            ))
-            .addContent(createSpacing(SPACING))
-            // Row 2: Cocktail, Long Drink
-            .addContent(createButtonRow(
-                listOf(
-                    DrinkType.COCKTAIL to ACTION_CLICK_COCKTAIL,
-                    DrinkType.LONG_DRINK to ACTION_CLICK_LONG_DRINK
-                )
-            ))
-            .build()
+
+        // Create dynamic layout based on number of active drinks
+        when (activeDrinks.size) {
+            1 -> {
+                // Single centered button
+                column.addContent(createButtonRow(
+                    listOf(activeDrinks[0] to getActionId(activeDrinks[0]))
+                ))
+            }
+            2 -> {
+                // 1 row with 2 buttons
+                column.addContent(createButtonRow(
+                    activeDrinks.map { it to getActionId(it) }
+                ))
+            }
+            3 -> {
+                // 2 rows: 2 buttons + 1 button
+                column.addContent(createButtonRow(
+                    activeDrinks.take(2).map { it to getActionId(it) }
+                ))
+                column.addContent(createSpacing(SPACING))
+                column.addContent(createButtonRow(
+                    listOf(activeDrinks[2] to getActionId(activeDrinks[2]))
+                ))
+            }
+            4 -> {
+                // 2 rows: 2 buttons + 2 buttons
+                column.addContent(createButtonRow(
+                    activeDrinks.take(2).map { it to getActionId(it) }
+                ))
+                column.addContent(createSpacing(SPACING))
+                column.addContent(createButtonRow(
+                    activeDrinks.drop(2).map { it to getActionId(it) }
+                ))
+            }
+            5 -> {
+                // 2 rows: 3 buttons + 2 buttons
+                column.addContent(createButtonRow(
+                    activeDrinks.take(3).map { it to getActionId(it) }
+                ))
+                column.addContent(createSpacing(SPACING))
+                column.addContent(createButtonRow(
+                    activeDrinks.drop(3).map { it to getActionId(it) }
+                ))
+            }
+        }
+
+        return column.build()
+    }
+
+    /**
+     * Maps a DrinkType to its corresponding action ID.
+     * This is used for tile button click handling.
+     */
+    private fun getActionId(drinkType: DrinkType): String {
+        return "action_${drinkType.name.lowercase()}"
     }
 
     /**
@@ -263,10 +313,10 @@ class DrinkTileService : TileService() {
             )
             .addContent(
                 LayoutElementBuilders.Text.Builder()
-                    .setText(drinkType.emoji)
+                    .setText(drinkType.defaultEmoji)
                     .setFontStyle(
-                        LayoutElementBuilders.FontStyle.Builder()
-                            .setSize(sp(TEXT_SIZE.toFloat()))
+                        FontStyle.Builder()
+                            .setSize(sp(24f))
                             .build()
                     )
                     .build()

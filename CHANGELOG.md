@@ -5,6 +5,40 @@ All notable changes to the Pegel Wear OS app will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-30
+
+### Added
+- Eight drink types (expanded from 5): Beer, Beer Tower, Wine, Shot, Cocktail, Long Drink, Vodka Pitcher, Vodka Tower
+- Settings screen with configurable active drinks (select 1-5 drinks to show on tile)
+- Drag & drop reordering of active drinks with long-press gesture
+- Dynamic tile layout that adapts to number of active drinks (1-5 buttons)
+- Haptic feedback during drag operations in settings
+- Visual feedback (opacity, scale) while dragging drink items
+- ActiveDrinksRepository for storing user drink preferences
+- Settings activity accessible from main app
+
+### Changed
+- Replaced custom image icons with native emoji rendering for better clarity
+- Tile now dynamically loads active drinks from user preferences
+- Tile layout adapts based on active drink count (1-5 different layouts)
+- Settings UI optimized for circular Wear OS screens
+- Reduced element sizes and padding for better text visibility
+- Text labels now support 2-line wrapping in settings
+
+### Fixed
+- Tile now refreshes immediately after "Reset All" is clicked
+- Tile now updates immediately after saving drink configuration
+- Text cut-off issue in settings screen on circular displays
+- Blurry icon rendering (switched from WebP images to emojis)
+- Consistent tile update behavior across all data modifications
+
+### Technical
+- Added reorderable Compose library (v0.9.6) for drag & drop
+- Implemented DataStore preferences for active drinks storage
+- Tile service now queries ActiveDrinksRepository on each render
+- Dynamic action ID generation for tile buttons
+- Improved layout arrangement (SpaceBetween → Start) for better text space
+
 ## [1.0.0] - 2025-10-29
 
 ### Added

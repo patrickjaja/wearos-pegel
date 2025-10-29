@@ -28,6 +28,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Settings Activity -->
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="Settings"
+            android:theme="@style/Theme.Pegel" />
+
         <!-- Drink Tile Service -->
         <service
             android:name=".tile.DrinkTileService"

@@ -1,5 +1,6 @@
 package com.pegel.wearos
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +45,8 @@ import com.pegel.wearos.data.DrinkLog
 import com.pegel.wearos.data.DrinkType
 import com.pegel.wearos.ui.MainViewModel
 import com.pegel.wearos.ui.theme.PegelTheme
+import androidx.wear.tiles.TileService
+import com.pegel.wearos.tile.DrinkTileService
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +62,7 @@ fun PegelApp(
     viewModel: MainViewModel = viewModel()
 ) {
     PegelTheme {
+        val context = LocalContext.current
         val todayDrinks by viewModel.todayDrinks.collectAsStateWithLifecycle()
         val drinkCounts by viewModel.drinkCounts.collectAsStateWithLifecycle()
         val totalDrinks by viewModel.totalDrinks.collectAsStateWithLifecycle()
@@ -87,6 +93,11 @@ fun PegelApp(
                 showDialog = showResetDialog,
                 onConfirm = {
                     viewModel.resetAllDrinks()
+
+                    // Request tile update after reset
+                    TileService.getUpdater(context)
+                        .requestUpdate(DrinkTileService::class.java)
+
                     showResetDialog = false
                 },
                 onDismiss = { showResetDialog = false }
@@ -136,6 +147,8 @@ fun DrinkLogScreen(
     onResetClick: () -> Unit,
     listState: ScalingLazyListState = rememberScalingLazyListState()
 ) {
+    val context = LocalContext.current
+
     ScalingLazyColumn(
         modifier = Modifier.fillMaxSize(),
         state = listState,
@@ -171,9 +184,16 @@ fun DrinkLogScreen(
             DrinkLogItem(drinkLog = drinkLogs[index])
         }
 
-        // Reset button
+        // Settings button
         item {
             Spacer(modifier = Modifier.height(8.dp))
+            SettingsButton(onClick = {
+                context.startActivity(Intent(context, SettingsActivity::class.java))
+            })
+        }
+
+        // Reset button
+        item {
             ResetButton(onClick = onResetClick)
         }
     }
@@ -212,10 +232,20 @@ fun DrinkSummaryCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     drinkCounts.entries.forEachIndexed { index, (drinkType, count) ->
-                        Text(
-                            text = "${drinkType.emoji} $count",
-                            style = MaterialTheme.typography.body1
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = drinkType.defaultEmoji,
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = count.toString(),
+                                style = MaterialTheme.typography.body1
+                            )
+                        }
                         if (index < drinkCounts.size - 1) {
                             Spacer(modifier = Modifier.width(12.dp))
                         }
@@ -247,13 +277,31 @@ fun DrinkLogItem(drinkLog: DrinkLog) {
                 color = MaterialTheme.colors.onSurfaceVariant
             )
 
-            // Emoji
+            // Icon
             Text(
-                text = drinkLog.drinkType.emoji,
-                style = MaterialTheme.typography.display3,
-                modifier = Modifier.size(24.dp)
+                text = drinkLog.drinkType.defaultEmoji,
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Composable
+fun SettingsButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(40.dp),
+        colors = ButtonDefaults.primaryButtonColors()
+    ) {
+        Text(
+            text = "Settings",
+            style = MaterialTheme.typography.button,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
